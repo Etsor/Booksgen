@@ -119,7 +119,7 @@ Generates 3 files (.json, .xml, .csv) in ./ directory with 1000000 books in them
 ```
 Generates 100 book covers in ./covers/ directory
 
-## Usage HTTP server:
+## Usage HTTP server
 ```sh
 -p   --port              specify port (default: 8080)
 -i   --ip                specify IP (default: localhost)
