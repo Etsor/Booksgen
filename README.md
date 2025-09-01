@@ -1,5 +1,5 @@
 # Booksgen
-Books metadata generator with support for JSON, CSV, and XML output formats, book cover generation, and both CLI and HTTP API interfaces.
+Book metadata generator with support for JSON, CSV, and XML output formats, book cover generation, and both CLI and HTTP API interfaces.
 
 > [!WARNING]
 > Project is in a very early stage of development. Especially the API and cover generation
