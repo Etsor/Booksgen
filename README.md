@@ -123,7 +123,7 @@ Generates 100 book covers in ./covers/ directory
 ```sh
 -p   --port              specify port (default: 8080)
 -i   --ip                specify IP (default: localhost)
---log                    log IP addresses of incoming requests in SQLite database
+--log                    log incoming requests in SQLite database
                          (id, ip, endpoint, amount, timestamp)
 -db  --dbpath            specify database file path (default: ./requests.db)
 ```
