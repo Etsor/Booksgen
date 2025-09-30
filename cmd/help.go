@@ -43,8 +43,6 @@ const APIHELPMSG string = "" +
 
 	"  ./booksgen --api --ip 0.0.0.0 --log \n" +
 	"  Starts \033[1mHTTP server\033[0m on \033[1m0.0.0.0\033[0m:8080 and \033[1mstores logs into SQLite database\033[0m\n" +
-	"  (server will be available on whole local network)\n" +
-	"  \033[41m\033[30m!DO IT ONLY IF YOU KNOW WHAT YOU ARE DOING!\033[0m\n\n" +
 
 	"Example request:\n" +
 	"                                  ↓----[json|xml|csv]\n" +
