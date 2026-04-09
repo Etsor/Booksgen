@@ -17,7 +17,7 @@ func WriteBooksToCSV(books *[]b.Book, dirPath string) {
     CreateDir(dirPath)
     f, err := CreateFile(dirPath, "books", ".csv")
     if err != nil {
-        log.Fatalf("%sError occured while exporting to CSV: %s%s\n",
+        log.Fatalf("%sError occurred while exporting to CSV: %s%s\n",
             s.FG_RED, err, s.RESET)
     }
 
@@ -37,7 +37,7 @@ func WriteBooksToJSON(books *[]b.Book, dirPath string) {
     CreateDir(dirPath)
     f, err := CreateFile(dirPath, "books", ".json")
     if err != nil {
-        log.Fatalf("%sError occured while exporting to JSON: %s%s\n",
+        log.Fatalf("%sError occurred while exporting to JSON: %s%s\n",
             s.FG_RED, err, s.RESET)
     }
 
@@ -57,7 +57,7 @@ func WriteBooksToXML(books *[]b.Book, dirPath string) {
     CreateDir(dirPath)
     f, err := CreateFile(dirPath, "books", ".xml")
     if err != nil {
-        log.Fatalf("%sError occured while exporting to XML: %s%s\n",
+        log.Fatalf("%sError occurred while exporting to XML: %s%s\n",
             s.FG_RED, err, s.RESET)
     }
 

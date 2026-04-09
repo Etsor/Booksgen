@@ -2,8 +2,8 @@ package api
 
 import (
 	b "Booksgen/internal/book"
-	u "Booksgen/internal/utils"
 	s "Booksgen/pkg/style"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -11,54 +11,54 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // Run initializes and starts the HTTP server for the Booksgen API.
-// It parses command-line arguments to configure the server's port, IP address,
+// It uses the flag package to configure the server's port, IP address,
 // and optional SQLite database logging. The server exposes endpoints for
 // generating book data in JSON, XML, and CSV formats. If logging is enabled,
 // each request is logged to the SQLite database.
 func Run() {
-	port := 8080
-	ip := ""
+	fs := flag.NewFlagSet("booksgen", flag.ExitOnError)
 
-	logdb := u.HasArg("--log")
+	// Mode flag — registered so the parser doesn't error when invoked via main.
+	_ = fs.Bool("api", false, "")
+
+	var port int
+	fs.IntVar(&port, "p", 8080, "server port")
+	fs.IntVar(&port, "port", 8080, "server port")
+
+	var ip string
+	fs.StringVar(&ip, "i", "", "server IP address")
+	fs.StringVar(&ip, "ip", "", "server IP address")
+
+	var logdb bool
+	fs.BoolVar(&logdb, "log", false, "enable SQLite request logging")
+
+	var dbPath string
+	fs.StringVar(&dbPath, "db", "./requests.db", "SQLite database path")
+	fs.StringVar(&dbPath, "dbpath", "./requests.db", "SQLite database path")
+
+	fs.Parse(os.Args[1:])
+
 	if logdb {
-		logDB()
-	}
-
-	if u.HasArg("-p") || u.HasArg("--port") {
-		for i, arg := range os.Args {
-			if arg == "-p" || arg == "--port" {
-				pPos := i
-				var err error
-				port, err = strconv.Atoi(os.Args[pPos+1])
-				if err != nil {
-					log.Fatalf("%sInvalid port%s\n",
-						s.FG_RED, s.RESET)
-				}
-			}
+		log.Printf("%s!Logging to sqlite db enabled!%s\n", s.FG_YELLOW, s.RESET)
+		initDB(dbPath)
+		fullDbPath, err := filepath.Abs(dbPath)
+		if err != nil {
+			log.Fatalf("%sError getting path to database: %s\n%s%s\n",
+				s.FG_RED, fullDbPath, err, s.RESET)
 		}
-	}
-
-	if u.HasArg("-i") || u.HasArg("--ip") {
-		for i, arg := range os.Args {
-			if arg == "-i" || arg == "--ip" {
-				ipPos := i
-				ip = os.Args[ipPos+1]
-			}
-		}
+		log.Printf("Database path: %s", fullDbPath)
 	}
 
 	mux := http.NewServeMux()
-
 	mux.HandleFunc("/books/json", jsonHandler(logdb))
 	mux.HandleFunc("/books/xml", xmlHandler(logdb))
 	mux.HandleFunc("/books/csv", csvHandler(logdb))
 
-	log.Printf("%sServer is running on: %s:%d%s\n",
-		s.FG_GREEN, ip, port, s.RESET)
-
+	log.Printf("%sServer is running on: %s:%d%s\n", s.FG_GREEN, ip, port, s.RESET)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", ip, port), mux))
 }
 
@@ -119,42 +119,22 @@ func csvHandler(logdb bool) http.HandlerFunc {
 	}
 }
 
-// logDB initializes logging to a SQLite database. It determines the database path from
-// command-line arguments ("-db" or "--dbpath"), falling back to a default path if not provided.
-func logDB() {
-	dbPath := "./requests.db"
-	if u.HasArg("-db") || u.HasArg("--dbpath") {
-		for i, arg := range os.Args {
-			if arg == "-db" || arg == "--dbpath" {
-				dbPos := i
-				dbPath = os.Args[dbPos+1]
-			}
-		}
-	}
-	log.Printf("%s!Logging to sqlite db enabled!%s\n",
-		s.FG_YELLOW, s.RESET)
-
-	initDB(dbPath)
-
-	fullDbPath, err := filepath.Abs(dbPath)
-	if err != nil {
-		log.Fatalf("%sError getting path to database: %s\n%s%s\n",
-			s.FG_RED, fullDbPath, err, s.RESET)
-	}
-	log.Printf("Database path: %s", fullDbPath)
-
-	defer db.Close()
-}
+const maxAmount = 10_000
 
 // parseAmount extracts the "amount" query parameter from the given HTTP request,
 // attempts to convert it to a positive integer, and returns its value as uint32.
 // If the parameter is missing, invalid, or less than or equal to zero, it defaults to 1.
+// Values above maxAmount are capped to prevent excessive resource usage.
 func parseAmount(r *http.Request) uint32 {
 	q := r.URL.Query().Get("amount")
 	amount, err := strconv.Atoi(q)
 
 	if err != nil || amount <= 0 {
 		return 1
+	}
+
+	if amount > maxAmount {
+		return maxAmount
 	}
 
 	return uint32(amount)
@@ -174,18 +154,20 @@ func getIP(r *http.Request) string {
 }
 
 // getRealIP extracts the client's real IP address from the HTTP request.
-// It first checks the "X-Forwarded-For" header, then the "X-Real-IP" header,
+// It first checks the "X-Forwarded-For" header (taking only the first entry,
+// since proxies append their address to the list), then the "X-Real-IP" header,
 // and finally falls back to using the remote address from the request.
-// This is useful when the server is behind a proxy or load balancer.
 func getRealIP(r *http.Request) string {
-	ip := r.Header.Get("X-Forwarded-For")
-	if ip != "" {
-		return ip
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		// X-Forwarded-For may contain a comma-separated chain; the first is the client.
+		if i := strings.Index(xff, ","); i != -1 {
+			return strings.TrimSpace(xff[:i])
+		}
+		return xff
 	}
 
-	ip = r.Header.Get("X-Real-IP")
-	if ip != "" {
-		return ip
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		return xri
 	}
 	// fallback
 	return getIP(r)

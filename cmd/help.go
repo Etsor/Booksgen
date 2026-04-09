@@ -32,7 +32,7 @@ const STANDHELPMSG string = "" +
 const APIHELPMSG string = "" +
 	"Usage HTTP server:\n" +
 	"  -p   --port               specify \033[1mport\033[0m (default: 8080)\n" +
-	"  -i   --ip                 specify \033[1mIP\033[0m (default: localhost)\n" +
+	"  -i   --ip                 specify \033[1mIP\033[0m (default: all interfaces)\n" +
 	"  --log                     \033[1mlog\033[0m IP addresses of incoming requests in \033[1mSQLite database\033[0m\n" +
 	"                            (id, ip, endpoint, amount, timestamp)\n" +
 	"  -db  --dbpath             specify \033[1mdatabase file path\033[0m (default: ./requests.db)\n\n" +

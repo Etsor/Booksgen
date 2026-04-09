@@ -6,9 +6,9 @@ var (
     // Text styles
     BOLD          = "\033[1m"
     DIM           = "\033[2m"
-    ITALIC        = "\033[3m" // !!! May not work everywhere !!!
+    ITALIC        = "\033[3m"
     UNDERLINE     = "\033[4m"
-    BLINK         = "\033[5m" // !!! May not work everywhere !!!
+    BLINK         = "\033[5m"
     INVERT        = "\033[7m"
     STRIKETHROUGH = "\033[9m"
     HIDDEN        = "\033[8m"

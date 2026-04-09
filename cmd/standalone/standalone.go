@@ -1,129 +1,78 @@
 package standalone
 
 import (
-    "Booksgen/cmd/standalone/cover"
-    b "Booksgen/internal/book"
-    fw "Booksgen/internal/filewriter"
-    u "Booksgen/internal/utils"
-    s "Booksgen/pkg/style"
-    "log"
-    "os"
-    "path/filepath"
-    "strconv"
+	"Booksgen/cmd/standalone/cover"
+	b "Booksgen/internal/book"
+	fw "Booksgen/internal/filewriter"
+	s "Booksgen/pkg/style"
+	"flag"
+	"log"
+	"os"
+	"path/filepath"
 )
 
-// Run starts standalone app, parses command-line arguments to determine output format (XML, JSON, CSV),
-// output directory, and the number of books to generate. It generates the specified
-// number of books and writes them to the chosen output format(s) in the specified directory.
+// Run starts the standalone app. It uses the flag package to parse command-line
+// arguments for output format (XML, JSON, CSV), output directory, book count,
+// and optional cover generation.
 func Run() {
-    x := u.HasArg("-x") || u.HasArg("--xml")
-    j := u.HasArg("-j") || u.HasArg("--json")
-    c := u.HasArg("-c") || u.HasArg("--csv")
-    o := u.HasArg("-o") || u.HasArg("--output")
-    a := u.HasArg("-a") || u.HasArg("--amount")
-    cov := u.HasArg("-cov") || u.HasArg("--cover")
+	fs := flag.NewFlagSet("booksgen", flag.ExitOnError)
 
-    amount := 1
-    dirPath := "./output/"
+	// Mode flags — registered so the parser doesn't error when invoked via main.
+	_ = fs.Bool("st", false, "")
+	_ = fs.Bool("standalone", false, "")
 
-    if a {
-        for i, arg := range os.Args {
-            if arg == "-a" || arg == "--amount" {
-                aPos := i
-                var err error
-                amount, err = strconv.Atoi(os.Args[aPos+1])
-                if err != nil {
-                    log.Fatalf("%sInvalid amount argument%s\n",
-                        s.FG_RED, s.RESET)
-                }
-            }
-        }
-    }
+	var exportXML, exportJSON, exportCSV, genCover bool
+	fs.BoolVar(&exportXML, "x", false, "export XML")
+	fs.BoolVar(&exportXML, "xml", false, "export XML")
+	fs.BoolVar(&exportJSON, "j", false, "export JSON")
+	fs.BoolVar(&exportJSON, "json", false, "export JSON")
+	fs.BoolVar(&exportCSV, "c", false, "export CSV")
+	fs.BoolVar(&exportCSV, "csv", false, "export CSV")
+	fs.BoolVar(&genCover, "cov", false, "generate covers")
+	fs.BoolVar(&genCover, "cover", false, "generate covers")
 
-    if o {
-        for i, arg := range os.Args {
-            if arg == "-o" || arg == "--output" {
-                oPos := i
-                dirPath = os.Args[oPos+1]
-                oDir, err := filepath.Abs(dirPath)
-                if err != nil {
-                    log.Fatalf("%sError getting path to directory: %s\n%s%s\n",
-                        s.FG_RED, oDir, err, s.RESET)
-                }
+	var amount int
+	fs.IntVar(&amount, "a", 1, "number of books to generate")
+	fs.IntVar(&amount, "amount", 1, "number of books to generate")
 
-                log.Printf("Path to output directory: %s", oDir)
-            }
-        }
-    }
+	var dirPath string
+	fs.StringVar(&dirPath, "o", "./output/", "output directory")
+	fs.StringVar(&dirPath, "output", "./output/", "output directory")
 
-    books := b.GenerateBooks(uint32(amount))
-    
-    if cov {
-        w := 400
-        h := 650
+	var covAmount, covW, covH int
+	fs.IntVar(&covAmount, "cova", 1, "number of covers")
+	fs.IntVar(&covAmount, "covamount", 1, "number of covers")
+	fs.IntVar(&covW, "covw", 400, "cover width in pixels")
+	fs.IntVar(&covW, "covwidth", 400, "cover width in pixels")
+	fs.IntVar(&covH, "covh", 650, "cover height in pixels")
+	fs.IntVar(&covH, "covheight", 650, "cover height in pixels")
 
-        amount := 1
-        dirPath := "./covoutput/"
+	var covDir string
+	fs.StringVar(&covDir, "covo", "./covoutput/", "cover output directory")
+	fs.StringVar(&covDir, "covoutput", "./covoutput/", "cover output directory")
 
-        if u.HasArg("-cova") || u.HasArg("--covamount") {
-            for i, arg := range os.Args {
-                if arg == "-cova" || arg == "--covamount" {
-                    var err error
-                    amount, err = strconv.Atoi(os.Args[i+1])
-                    if err != nil {
-                        log.Fatalf("%sInvalid cover amount argument%s\n",
-                            s.FG_RED, s.RESET)
-                    }
-                }
-            }
-        }
+	fs.Parse(os.Args[1:])
 
-        if u.HasArg("-covo") || u.HasArg("--covoutput") {
-            for i, arg := range os.Args {
-                if arg == "-covo" || arg == "--covoutput" {
-                    dirPath = os.Args[i+1]
-                }
-            }
-        }
+	oDir, err := filepath.Abs(dirPath)
+	if err != nil {
+		log.Fatalf("%sError getting path to directory: %s\n%s%s\n",
+			s.FG_RED, oDir, err, s.RESET)
+	}
+	log.Printf("Path to output directory: %s", oDir)
 
-        if u.HasArg("-covw") || u.HasArg("--covwidth") {
-            for i, arg := range os.Args {
-                if arg == "-covw" || arg == "--covwidth" {
-                    var err error
-                    w, err = strconv.Atoi(os.Args[i+1])
-                    if err != nil {
-                        log.Fatalf("%sInvalid width argument%s\n",
-                            s.BG_RED, s.RESET)
-                    }
-                }
-            }
-        }
+	books := b.GenerateBooks(uint32(amount))
 
-        if u.HasArg("-covh") || u.HasArg("--covheight") {
-            for i, arg := range os.Args {
-                if arg == "-covh" || arg == "--covheight" {
-                    var err error
-                    h, err = strconv.Atoi(os.Args[i+1])
-                    if err != nil {
-                        log.Fatalf("%sInvalid height argument%s\n",
-                            s.BG_RED, s.RESET)
-                    }
-                }
-            }
-        }
+	if genCover {
+		cover.Generate(covW, covH, covAmount, covDir)
+	}
 
-        cover.Generate(w, h, amount, dirPath)
-    }
-
-    if x {
-        fw.WriteBooksToXML(&books, dirPath)
-    }
-
-    if j {
-        fw.WriteBooksToJSON(&books, dirPath)
-    }
-
-    if c {
-        fw.WriteBooksToCSV(&books, dirPath)
-    }
+	if exportXML {
+		fw.WriteBooksToXML(&books, dirPath)
+	}
+	if exportJSON {
+		fw.WriteBooksToJSON(&books, dirPath)
+	}
+	if exportCSV {
+		fw.WriteBooksToCSV(&books, dirPath)
+	}
 }

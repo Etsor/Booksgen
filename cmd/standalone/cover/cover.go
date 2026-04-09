@@ -1,8 +1,9 @@
 package cover
 
 import (
-	b "Booksgen/internal/book"
+	"Booksgen/internal/book"
 	fw "Booksgen/internal/filewriter"
+	"Booksgen/res"
 	s "Booksgen/pkg/style"
 	"fmt"
 	"image/color"
@@ -11,22 +12,24 @@ import (
 	"path/filepath"
 
 	"github.com/fogleman/gg"
+	"github.com/golang/freetype/truetype"
 )
 
+// Paths are relative to the embedded FS root (res/).
 var fonts = [...]string{
-	"res/fonts/129_kosmos/129 KOSMOS.ttf",
-	"res/fonts/big_scratch_brush/BigScratchBrush.ttf",
-	"res/fonts/bold_pixels/BoldPixels.ttf",
-	"res/fonts/cossette_texte/CossetteTexte-Regular.ttf",
-	"res/fonts/kosolapa_script/KosolapaScript-Regular.ttf",
-	"res/fonts/manufacturing_consent/fonts/ttf/ManufacturingConsent-Regular.ttf",
-	"res/fonts/southgetto/SOUTHGHETTO.ttf",
-	"res/fonts/super_malibu/Super Malibu.ttf",
+	"fonts/129_kosmos/129 KOSMOS.ttf",
+	"fonts/big_scratch_brush/BigScratchBrush.ttf",
+	"fonts/bold_pixels/BoldPixels.ttf",
+	"fonts/cossette_texte/CossetteTexte-Regular.ttf",
+	"fonts/kosolapa_script/KosolapaScript-Regular.ttf",
+	"fonts/manufacturing_consent/fonts/ttf/ManufacturingConsent-Regular.ttf",
+	"fonts/southgetto/SOUTHGHETTO.ttf",
+	"fonts/super_malibu/Super Malibu.ttf",
 }
 
 func Generate(width, height, amount int, dirPath string) {
 	fw.CreateDir(dirPath)
-	books := b.GenerateBooks(uint32(amount))
+	books := book.GenerateBooks(uint32(amount))
 
 	for i := range amount {
 		dc := gg.NewContext(width, height)
@@ -80,12 +83,22 @@ func Generate(width, height, amount int, dirPath string) {
 	}
 }
 
+// loadFont reads a TTF from the embedded FS and sets it on the drawing context.
+// This is equivalent to gg.LoadFontFace but works regardless of the working directory.
 func loadFont(dc *gg.Context, fontPath string, size float64) {
-	err := dc.LoadFontFace(fontPath, size)
+	data, err := res.Fonts.ReadFile(fontPath)
 	if err != nil {
-		log.Fatalf("%sError loading font: %s, %s%s\n",
+		log.Fatalf("%sError reading embedded font %s: %s%s\n",
 			s.FG_RED, fontPath, err, s.RESET)
 	}
+
+	f, err := truetype.Parse(data)
+	if err != nil {
+		log.Fatalf("%sError parsing embedded font %s: %s%s\n",
+			s.FG_RED, fontPath, err, s.RESET)
+	}
+
+	dc.SetFontFace(truetype.NewFace(f, &truetype.Options{Size: size}))
 }
 
 func drawCenteredText(dc *gg.Context, text string, offset_y, width float64) {

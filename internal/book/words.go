@@ -6,7 +6,7 @@ var Words = [...]string{
     "Light", "Night", "Fire", "Ice", "Wind",
     "River", "Forest", "Moon", "Star", "Sun",
     "Hope", "Fear", "Promise", "Truth", "Illusion",
-    "dirPath", "Soul", "Heart", "Mind", "Spirit",
+    "Path", "Soul", "Heart", "Mind", "Spirit",
     "Empire", "Kingdom", "Chronicle", "Legend", "Curse",
     "Blessing", "Awakening", "Fall", "Rise", "Return",
     "Guardian", "Hunter", "Heir", "Wanderer", "Seer",

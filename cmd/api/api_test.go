@@ -100,11 +100,18 @@ func TestParseAmount(t *testing.T) {
 }
 
 func TestGetRealIP(t *testing.T) {
-	// X-Forwarded-For
+	// X-Forwarded-For — single IP
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("X-Forwarded-For", "10.0.0.1")
 	if ip := getRealIP(req); ip != "10.0.0.1" {
 		t.Errorf("Expected 10.0.0.1, got %s", ip)
+	}
+
+	// X-Forwarded-For — proxy chain: only the first (client) IP should be returned
+	req = httptest.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Forwarded-For", "10.0.0.1, 172.16.0.1, 192.168.1.1")
+	if ip := getRealIP(req); ip != "10.0.0.1" {
+		t.Errorf("Expected 10.0.0.1 from proxy chain, got %s", ip)
 	}
 
 	// X-Real-IP

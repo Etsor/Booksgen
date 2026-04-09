@@ -2,6 +2,7 @@ package book
 
 import (
     "Booksgen/pkg/style"
+    "encoding/csv"
     "encoding/json"
     "encoding/xml"
     "fmt"
@@ -43,8 +44,8 @@ func generateBook() Book {
 
     b.Genre = Genres[rand.Intn(len(Genres))]
     b.Publisher = Publishers[rand.Intn(len(Publishers))]
-    b.Year = uint16(rand.Int31n(2025))
-    b.Pages = uint16(rand.Int31n(2048))
+    b.Year = uint16(1800 + rand.Int31n(226))
+    b.Pages = uint16(1 + rand.Int31n(2047))
 
     return b
 }
@@ -82,17 +83,20 @@ func GenerateBooks(amount uint32) []Book {
     return books
 }
 
-// BooksToCSV serializes a slice of Book structs into an indented CSV format
-// and returns the result as a byte slice.
-// If serialization fails, it logs a fatal error and exits.
+// BooksToCSV serializes a slice of Book structs into CSV format
+// and returns the result as a byte slice. Fields containing commas are quoted.
 func BooksToCSV(books *[]Book) []byte {
     var sb strings.Builder
-    sb.WriteString("isbn,title,author,genre,publisher,year,pages\n")
+    w := csv.NewWriter(&sb)
 
+    w.Write([]string{"isbn", "title", "author", "genre", "publisher", "year", "pages"})
     for _, b := range *books {
-        fmt.Fprintf(&sb, "%s,%s,%s,%s,%s,%d,%d\n",
-            b.ISBN, b.Title, b.Author, b.Genre, b.Publisher, b.Year, b.Pages)
+        w.Write([]string{
+            b.ISBN, b.Title, b.Author, b.Genre, b.Publisher,
+            fmt.Sprint(b.Year), fmt.Sprint(b.Pages),
+        })
     }
+    w.Flush()
 
     return []byte(sb.String())
 }
@@ -104,9 +108,8 @@ func BooksToJSON(books *[]Book) []byte {
     wrapper := Books{Items: *books}
     data, err := json.MarshalIndent(wrapper, "", "  ")
     if err != nil {
-        log.Fatalf("%sError occured while JSON serialization: %s\n",
-            style.FG_RED, style.RESET)
-        panic(err)
+        log.Fatalf("%sError occurred while JSON serialization: %s%s\n",
+            style.FG_RED, err, style.RESET)
     }
 
     return data
@@ -119,7 +122,7 @@ func BooksToXML(books *[]Book) []byte {
     wrapper := Books{Items: *books}
     data, err := xml.MarshalIndent(wrapper, "", "    ")
     if err != nil {
-        log.Fatalf("%sError occured while XML serialization: %s%s",
+        log.Fatalf("%sError occurred while XML serialization: %s%s",
             style.FG_RED, err, style.RESET)
     }
 
